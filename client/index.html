@@ -1,0 +1,1334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pub Game</title>
+  <style>
+    /* General styles */
+    body {
+      margin: 0;
+      overflow: hidden;
+      background: #F5F7FA;
+      font-family: Arial, sans-serif;
+    }
+
+    /* Loading animation */
+    .loading-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100vh;
+      overflow: hidden;
+      animation: changeBackground 5s ease-in-out forwards;
+    }
+
+    /* Liquid */
+    .liquid {
+      position: absolute;
+      bottom: 0;
+      width: 100%;
+      height: 0;
+      background: #FFA500;
+      animation: fill 5s ease-in-out forwards;
+    }
+
+    /* Foam */
+    .foam {
+      position: absolute;
+      bottom: 0;
+      width: 100%;
+      height: 15vh;
+      background: #FFF;
+      opacity: 0.9;
+      border-radius: 50% 50% 0 0;
+      animation: riseWithLiquid 5s ease-in-out forwards;
+      box-shadow: 
+        0 -10px 20px rgba(255, 255, 255, 0.8),
+        0 -20px 40px rgba(255, 255, 255, 0.6),
+        0 -30px 60px rgba(255, 255, 255, 0.4);
+      z-index: 2;
+    }
+
+    /* Bubbles */
+    .bubbles {
+      position: absolute;
+      bottom: 0;
+      width: 100%;
+      height: 80vh;
+    }
+
+    .bubbles div {
+      position: absolute;
+      background: rgba(255, 255, 255, 0.8);
+      border-radius: 50%;
+      opacity: 0;
+      transition: opacity 1s ease-in-out;
+    }
+
+    /* Content */
+    .content {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      opacity: 0;
+      transition: opacity 0.5s ease-in-out;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    .content.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    /* Buttons */
+    .menu-button {
+      padding: 15px 30px;
+      font-size: 1.2rem;
+      background: #FFF;
+      color: #FFA500;
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+      transition: transform 0.2s, background 0.2s;
+      margin: 10px;
+    }
+
+    .menu-button:hover {
+      transform: scale(1.05);
+      background: #FFD700;
+    }
+
+    /* Sub-menus */
+    .sub-menu {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      margin-top: 20px;
+    }
+
+    .sub-menu.visible {
+      display: flex;
+    }
+
+    /* Input fields */
+    .game-code-input, .player-name-input, .pub-input {
+      padding: 10px;
+      font-size: 1rem;
+      border: 2px solid #FFA500;
+      border-radius: 50px;
+      margin: 10px;
+      text-align: center;
+      width: 200px;
+    }
+
+    .game-code-display {
+      font-size: 1.5rem;
+      color: #FFF;
+      background: #FFA500;
+      padding: 10px 20px;
+      border-radius: 50px;
+      margin: 20px;
+    }
+
+    /* Back button */
+    .back-button {
+      background: white;
+      border: 2px solid #FFA500;
+      color: black;
+      cursor: pointer;
+      margin-top: 15px;
+      padding: 8px 20px;
+      border-radius: 50px;
+      font-size: 1rem;
+      transition: all 0.2s;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    /* Screens */
+    #lobbyScreen, #gameScreen, #pubSelectionScreen, #hidingPubSelectionScreen {
+      text-align: center;
+      color: white;
+    }
+
+    #playerCount, #hiderAnnouncement {
+      font-size: 1.2rem;
+      margin: 10px;
+    }
+
+    #playersList, #playerRoles {
+      margin: 20px;
+      padding: 15px;
+      background: rgba(255, 255, 255, 0.8);
+      border-radius: 10px;
+      color: #333;
+      min-width: 300px;
+    }
+
+    /* Pub Selection Screen */
+    #pubSelectionScreen, #hidingPubSelectionScreen {
+      max-width: 90%;
+    }
+
+    #pubInputs, #hidingPubOptions {
+      max-height: 40vh;
+      overflow-y: auto;
+      margin: 10px 0;
+    }
+
+    .pub-count-selector {
+      margin: 20px;
+    }
+
+    /* Role indicators */
+    .you-are-hider {
+      color: #FF0000;
+      font-weight: bold;
+    }
+
+    .you-are-seeker {
+      color: #0000FF;
+      font-weight: bold;
+    }
+
+    /* Pub selection buttons */
+    .pub-option-button {
+      padding: 10px 20px;
+      margin: 5px;
+      background: #FFF;
+      color: #FFA500;
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+      transition: all 0.2s;
+      width: 80%;
+    }
+
+    .pub-option-button:hover {
+      background: #FFD700;
+      transform: scale(1.02);
+    }
+
+    /* London Pubs Finder Styles */
+    .pub-finder-container {
+      background-color: white;
+      padding: 20px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      width: 90%;
+      max-width: 800px;
+    }
+
+    .control-group {
+      margin-bottom: 15px;
+    }
+
+    .pub-finder-container label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+      color: #2c3e50;
+    }
+
+    .pub-finder-container select, 
+    .pub-finder-container input {
+      padding: 10px;
+      border: 2px solid #FFA500;
+      border-radius: 50px;
+      font-size: 16px;
+      width: 100%;
+      max-width: 300px;
+      text-align: center;
+    }
+
+    .pub-finder-container input[type="number"] {
+      width: 80px;
+    }
+
+    .pub-finder-container button {
+      background-color: #FFA500;
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 50px;
+      cursor: pointer;
+      font-size: 16px;
+      margin: 10px 0;
+      transition: all 0.2s;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    .pub-finder-container button:hover {
+      background-color: #FF8C00;
+      transform: scale(1.02);
+    }
+
+    .pub-finder-results {
+      margin-top: 20px;
+    }
+
+    .pub {
+      background-color: white;
+      border-radius: 10px;
+      padding: 15px;
+      margin-bottom: 15px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    .pub-name {
+      font-weight: bold;
+      font-size: 18px;
+      color: #2c3e50;
+      margin-bottom: 5px;
+    }
+
+    .pub-address {
+      color: #7f8c8d;
+      margin-bottom: 5px;
+    }
+
+    .pub-rating {
+      color: #f39c12;
+      font-weight: bold;
+    }
+
+    .pub-distance {
+      color: #27ae60;
+      font-style: italic;
+    }
+
+    .select-pub-btn {
+      background-color: #4CAF50;
+      padding: 8px 15px;
+      margin-top: 10px;
+    }
+
+    .select-pub-btn:hover {
+      background-color: #45a049;
+    }
+
+    .search-options {
+      display: flex;
+      gap: 20px;
+      margin-bottom: 15px;
+      flex-wrap: wrap;
+    }
+
+    .search-option {
+      display: flex;
+      align-items: center;
+    }
+
+    .search-option input {
+      width: auto;
+      margin-right: 8px;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 20px;
+      color: #FFA500;
+      font-weight: bold;
+    }
+
+    .error {
+      color: #e74c3c;
+      font-weight: bold;
+      padding: 10px;
+      text-align: center;
+    }
+
+    .pub-finder-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .pub-finder-close-btn {
+      background-color: #e74c3c;
+      padding: 8px 15px;
+    }
+
+    .pub-finder-close-btn:hover {
+      background-color: #c0392b;
+    }
+
+    .pub-selection-method {
+      display: flex;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+
+    .pub-method-btn {
+      padding: 15px 25px;
+      font-size: 1rem;
+      background: #FFF;
+      color: #FFA500;
+      border: 2px solid #FFA500;
+      border-radius: 50px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .pub-method-btn.active {
+      background: #FFA500;
+      color: white;
+    }
+
+    .pub-method-btn:hover {
+      transform: scale(1.02);
+    }
+
+    /* Animations */
+    @keyframes fill {
+      0% { height: 0; }
+      100% { height: 100vh; }
+    }
+
+    @keyframes riseWithLiquid {
+      0% { bottom: 0; }
+      100% { bottom: calc(100vh - 15vh); }
+    }
+
+    @keyframes pour {
+      0% { transform: translateX(-50%) scaleY(0); }
+      50% { transform: translateX(-50%) scaleY(1); }
+      100% { transform: translateX(-50%) scaleY(0); }
+    }
+
+    @keyframes changeBackground {
+      0% { background: #F5F7FA; }
+      100% { background: #FFA500; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Beer Animation -->
+  <div class="loading-container">
+    <div class="liquid"></div>
+    <div class="foam"></div>
+    <div class="bubbles">
+      <!-- Bubbles will be added dynamically by JavaScript -->
+    </div>
+  </div>
+
+  <!-- Interactive Content -->
+  <div class="content" id="content">
+    <button class="menu-button" id="playButton">PLAY</button>
+    
+    <!-- Name Input Screen -->
+    <div class="sub-menu" id="nameInputScreen">
+      <input type="text" class="player-name-input" id="playerNameInput" placeholder="Enter Your Name" maxlength="20">
+      <button class="menu-button" id="submitNameButton">CONTINUE</button>
+      <button class="back-button" id="backFromNameButton">← Back to Main</button>
+    </div>
+    
+    <!-- Game Options Sub-Menu -->
+    <div class="sub-menu" id="gameOptions">
+      <button class="menu-button" id="joinButton">JOIN GAME</button>
+      <button class="menu-button" id="startButton">START GAME</button>
+      <button class="back-button" id="backToMainButton">← Back to Main</button>
+    </div>
+    
+    <!-- Join Game Sub-Menu -->
+    <div class="sub-menu" id="joinMenu">
+      <input type="text" class="game-code-input" id="gameCodeInput" placeholder="Enter Game Code" maxlength="6">
+      <button class="menu-button" id="submitCodeButton">SUBMIT</button>
+      <button class="back-button" id="backFromJoinButton">← Back to Options</button>
+    </div>
+    
+    <!-- Start Game Sub-Menu -->
+    <div class="sub-menu" id="startMenu">
+      <button class="menu-button" id="startGameButton">CREATE LOBBY</button>
+      <button class="back-button" id="backFromStartButton">← Back to Options</button>
+    </div>
+    
+    <!-- Lobby Screen -->
+    <div class="sub-menu" id="lobbyScreen">
+      <div class="game-code-display" id="lobbyCodeDisplay">CODE: LOADING...</div>
+      <div id="playerCount">Players: 1</div>
+      <div id="playersList">Waiting for players...</div>
+      <button class="menu-button" id="lobbyStartButton">START GAME</button>
+      <button class="back-button" id="leaveLobbyButton">← Leave Lobby</button>
+    </div>
+    
+    <!-- Pub Selection Method Screen -->
+    <div class="sub-menu" id="pubSelectionMethodScreen">
+      <h2>Choose How to Select Pubs</h2>
+      <div class="pub-selection-method">
+        <button class="pub-method-btn active" id="manualPubSelectionBtn">Manual Entry</button>
+        <button class="pub-method-btn" id="autoPubSelectionBtn">London Pubs Finder</button>
+      </div>
+      <button class="back-button" id="backFromSelectionMethodButton">← Back</button>
+    </div>
+    
+    <!-- Manual Pub Selection Screen (for hider only) -->
+    <!-- Pub Selection Method Screen -->
+    <div class="sub-menu" id="pubSelectionMethodScreen">
+      <h2>Choose How to Select Pubs</h2>
+      <div class="pub-selection-method">
+        <button class="pub-method-btn active" id="manualPubSelectionBtn">Manual Entry</button>
+        <button class="pub-method-btn" id="autoPubSelectionBtn">London Pubs Finder</button>
+      </div>
+      <button class="back-button" id="backFromSelectionMethodButton">← Back</button>
+    </div>
+
+    <!-- Manual Pub Selection Screen (for hider only) -->
+    <div class="sub-menu" id="pubSelectionScreen">
+      <h2>You're the Hider!</h2>
+      <p>Enter at least 3 pub locations:</p>
+      
+      <div id="pubInputs">
+        <input type="text" class="pub-input" placeholder="Pub name or address">
+        <input type="text" class="pub-input" placeholder="Pub name or address">
+        <input type="text" class="pub-input" placeholder="Pub name or address">
+      </div>
+      
+      <button id="addAnotherPub">+ Add Another Pub</button>
+      
+      <div class="pub-count-selector">
+        <label>How many pubs should be used?</label>
+        <select id="pubCountSelect">
+          <option value="1">1</option>
+          <option value="2">2</option>
+          <option value="3" selected>3</option>
+          <option value="4">4</option>
+          <option value="5">5</option>
+        </select>
+      </div>
+      
+      <button class="menu-button" id="submitPubsButton">Submit Pubs</button>
+      <button class="back-button" id="backToSelectionMethodButton1">← Change Selection Method</button>
+    </div>
+    
+    <!-- London Pubs Finder Screen -->
+    <div class="sub-menu" id="londonPubsFinderScreen">
+      <div class="pub-finder-container">
+        <div class="pub-finder-header">
+          <h2 style="color: #2c3e50; margin: 0;">London Pubs Finder</h2>
+          <button class="pub-finder-close-btn" id="closeFinderBtn">Close</button>
+        </div>
+        
+        <div class="control-group">
+          <label for="searchType">Search Type:</label>
+          <div class="search-options">
+            <div class="search-option">
+              <input type="radio" id="allAreas" name="searchType" value="all" checked>
+              <label for="allAreas">All Zones 1-4 (well-spaced)</label>
+            </div>
+            <div class="search-option">
+              <input type="radio" id="specificArea" name="searchType" value="specific">
+              <label for="specificArea">Specific Area</label>
+            </div>
+          </div>
+        </div>
+        
+        <div class="control-group" id="areaSelection" style="display: none;">
+          <label for="selectedArea">Select Area:</label>
+          <select id="selectedArea">
+            <option value="west_end">West End</option>
+            <option value="city">City of London</option>
+            <option value="north">North London</option>
+            <option value="east">East London</option>
+            <option value="south">South London</option>
+            <option value="west">West London</option>
+            <option value="camden">Camden</option>
+            <option value="islington">Islington</option>
+            <option value="shoreditch">Shoreditch</option>
+            <option value="clapham">Clapham</option>
+            <option value="greenwich">Greenwich</option>
+          </select>
+        </div>
+        
+        <div class="control-group">
+          <label for="pubCount">Number of pubs to find (3-15):</label>
+          <input type="number" id="finderPubCount" min="3" max="15" value="5">
+        </div>
+        
+        <button id="findPubs">Find Pubs</button>
+        <div id="finderResults" class="pub-finder-results"></div>
+      </div>
+      <button class="back-button" id="backToSelectionMethodButton2">← Change Selection Method</button>
+    </div>
+    
+    <!-- Hiding Pub Selection Screen (for hider only) -->
+    <div class="sub-menu" id="hidingPubSelectionScreen">
+      <h2>Choose Your Hiding Pub</h2>
+      <p>Select which pub you'll actually be hiding at:</p>
+      
+      <div id="hidingPubOptions">
+        <!-- Pub options will be added here dynamically -->
+      </div>
+      
+      <button class="menu-button" id="submitHidingPubButton">Submit Choice</button>
+    </div>
+    
+    <!-- Game Screen -->
+    <div class="sub-menu" id="gameScreen">
+      <div id="hiderAnnouncement"></div>
+      <div id="playerRoles"></div>
+      <button class="back-button" id="returnToLobbyButton">← Return to Lobby</button>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    // Bubble animation
+    function createBubble() {
+      const bubble = document.createElement('div');
+      const size = Math.floor(Math.random() * 20) + 10;
+      const left = Math.random() * 100;
+
+      bubble.style.width = `${size}px`;
+      bubble.style.height = `${size}px`;
+      bubble.style.left = `${left}%`;
+      bubble.style.bottom = `-${size}px`;
+      bubble.style.opacity = '1';
+
+      return bubble;
+    }
+
+    function animateBubbles() {
+      const bubblesContainer = document.querySelector('.bubbles');
+      const foam = document.querySelector('.foam');
+
+      for (let i = 0; i < 50; i++) {
+        const bubble = createBubble();
+        bubblesContainer.appendChild(bubble);
+
+        let bubbleSpeed = Math.random() * 2 + 1;
+        let bubblePosition = -parseInt(bubble.style.height);
+
+        function moveBubble() {
+          const foamBottom = foam.getBoundingClientRect().bottom;
+          const bubbleBottom = bubble.getBoundingClientRect().bottom;
+
+          if (bubbleBottom <= foamBottom + 20) {
+            bubble.style.bottom = `-${bubble.style.height}`;
+            bubble.style.left = `${Math.random() * 100}%`;
+            bubblePosition = -parseInt(bubble.style.height);
+          } else {
+            bubblePosition += bubbleSpeed;
+            bubble.style.bottom = `${bubblePosition}px`;
+          }
+          requestAnimationFrame(moveBubble);
+        }
+        moveBubble();
+      }
+    }
+
+    // Start animations
+    animateBubbles();
+    setTimeout(() => {
+      document.getElementById('content').classList.add('visible');
+    }, 5000);
+
+    // Menu navigation elements
+    const playButton = document.getElementById('playButton');
+    const gameOptions = document.getElementById('gameOptions');
+    const joinButton = document.getElementById('joinButton');
+    const startButton = document.getElementById('startButton');
+    const joinMenu = document.getElementById('joinMenu');
+    const startMenu = document.getElementById('startMenu');
+    const lobbyScreen = document.getElementById('lobbyScreen');
+    const nameInputScreen = document.getElementById('nameInputScreen');
+    const gameScreen = document.getElementById('gameScreen');
+    const pubSelectionScreen = document.getElementById('pubSelectionScreen');
+    const hidingPubSelectionScreen = document.getElementById('hidingPubSelectionScreen');
+    const hiderAnnouncement = document.getElementById('hiderAnnouncement');
+    const playerRoles = document.getElementById('playerRoles');
+    const pubInputsContainer = document.getElementById('pubInputs');
+    const hidingPubOptionsContainer = document.getElementById('hidingPubOptions');
+    const addAnotherPubBtn = document.getElementById('addAnotherPub');
+    const pubCountSelect = document.getElementById('pubCountSelect');
+    const submitPubsButton = document.getElementById('submitPubsButton');
+    const submitHidingPubButton = document.getElementById('submitHidingPubButton');
+    const pubSelectionMethodScreen = document.getElementById('pubSelectionMethodScreen');
+    const manualPubSelectionBtn = document.getElementById('manualPubSelectionBtn');
+    const autoPubSelectionBtn = document.getElementById('autoPubSelectionBtn');
+    const backFromSelectionMethodButton = document.getElementById('backFromSelectionMethodButton');
+    const backToSelectionMethodButton1 = document.getElementById('backToSelectionMethodButton1');
+    const backToSelectionMethodButton2 = document.getElementById('backToSelectionMethodButton2');
+    const londonPubsFinderScreen = document.getElementById('londonPubsFinderScreen');
+    const closeFinderBtn = document.getElementById('closeFinderBtn');
+    const findPubsBtn = document.getElementById('findPubs');
+    const finderResults = document.getElementById('finderResults');
+    const finderPubCount = document.getElementById('finderPubCount');
+
+    // Back buttons
+    const backToMainButton = document.getElementById('backToMainButton');
+    const backFromJoinButton = document.getElementById('backFromJoinButton');
+    const backFromStartButton = document.getElementById('backFromStartButton');
+    const leaveLobbyButton = document.getElementById('leaveLobbyButton');
+    const returnToLobbyButton = document.getElementById('returnToLobbyButton');
+
+    // Input buttons
+    const submitNameButton = document.getElementById('submitNameButton');
+    const backFromNameButton = document.getElementById('backFromNameButton');
+    const playerNameInput = document.getElementById('playerNameInput');
+    const submitCodeButton = document.getElementById('submitCodeButton');
+    const gameCodeInput = document.getElementById('gameCodeInput');
+    const startGameButton = document.getElementById('startGameButton');
+    const lobbyStartButton = document.getElementById('lobbyStartButton');
+
+    // Game state variables
+    let playerName = '';
+    let currentLobbyCode = null;
+    let isHost = false;
+    let selectedPubs = [];
+    let selectedPubCount = 3;
+    let pubSelectionMethod = 'manual'; // 'manual' or 'auto'
+
+    // Play button shows name input
+    playButton.addEventListener('click', () => {
+      playButton.style.display = 'none';
+      nameInputScreen.classList.add('visible');
+      playerNameInput.focus();
+    });
+
+    // Submit name button
+    submitNameButton.addEventListener('click', () => {
+      const name = playerNameInput.value.trim();
+      if (name) {
+        playerName = name;
+        nameInputScreen.classList.remove('visible');
+        gameOptions.classList.add('visible');
+      } else {
+        alert("Please enter your name!");
+      }
+    });
+
+    // Back from name input
+    backFromNameButton.addEventListener('click', () => {
+      nameInputScreen.classList.remove('visible');
+      playButton.style.display = 'block';
+    });
+
+    // Join game button shows join menu
+    joinButton.addEventListener('click', () => {
+      gameOptions.classList.remove('visible');
+      joinMenu.classList.add('visible');
+      gameCodeInput.focus();
+    });
+
+    // Start game button shows start menu
+    startButton.addEventListener('click', () => {
+      gameOptions.classList.remove('visible');
+      startMenu.classList.add('visible');
+    });
+
+    // Back to main from options
+    backToMainButton.addEventListener('click', () => {
+      gameOptions.classList.remove('visible');
+      playButton.style.display = 'block';
+    });
+
+    // Back to options from join menu
+    backFromJoinButton.addEventListener('click', () => {
+      joinMenu.classList.remove('visible');
+      gameOptions.classList.add('visible');
+    });
+
+    // Back to options from start menu
+    backFromStartButton.addEventListener('click', () => {
+      startMenu.classList.remove('visible');
+      gameOptions.classList.add('visible');
+    });
+
+    // Socket.io connection
+    const socket = io();
+
+    // Create lobby
+    startGameButton.addEventListener('click', () => {
+      if (playerName) {
+        socket.emit('createLobby', { playerName });
+        isHost = true;
+      } else {
+        alert("Please enter your name first!");
+      }
+    });
+
+    // Join lobby
+    submitCodeButton.addEventListener('click', () => {
+      const code = gameCodeInput.value.trim().toUpperCase();
+      if (code && playerName) {
+        console.log(`Attempting to join lobby with code: ${code}`);
+        socket.emit('joinLobby', { code, playerName });
+        isHost = false;
+      } else if (!code) {
+        alert("Please enter a game code!");
+      } else {
+        alert("Please enter your name first!");
+      }
+    });
+
+    // Start game (for lobby host)
+    lobbyStartButton.addEventListener('click', () => {
+      if (currentLobbyCode) {
+        console.log("Attempting to start game with code:", currentLobbyCode);
+        socket.emit('startGame', currentLobbyCode);
+      } else {
+        console.error("No lobby code available to start game");
+      }
+    });
+
+    // Add pub input field
+    function addPubInput() {
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'pub-input';
+      input.placeholder = 'Pub name or address';
+      pubInputsContainer.appendChild(input);
+      input.focus();
+    }
+
+    // Handle pub submission
+    submitPubsButton.addEventListener('click', () => {
+      const pubs = Array.from(document.querySelectorAll('.pub-input'))
+        .map(input => input.value.trim())
+        .filter(pub => pub.length > 0);
+      
+      selectedPubCount = parseInt(pubCountSelect.value);
+      
+      if (pubs.length >= selectedPubCount) {
+        selectedPubs = pubs;
+        showHidingPubSelection(pubs.slice(0, selectedPubCount));
+      } else {
+        alert(`You need at least ${selectedPubCount} valid pub entries!`);
+      }
+    });
+
+      // When pubs are selected from the finder
+  document.querySelectorAll('.select-pub-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const pubName = decodeURIComponent(btn.dataset.pub);
+      
+      // Visual feedback
+      btn.textContent = '✓ Selected!';
+      btn.style.backgroundColor = '#2ecc71';
+      
+      // Store selected pubs
+      selectedPubs = pubs.map(p => p.name);
+      selectedPubCount = pubs.length;
+      
+      // Submit the pubs
+      socket.emit('submitPubs', {
+        code: currentLobbyCode,
+        pubs: selectedPubs,
+        pubCount: selectedPubCount,
+        pubSelectionMethod: 'auto'
+      });
+    });
+  });
+
+    // Show hiding pub selection screen
+    function showHidingPubSelection(pubs) {
+      // Hide current screen
+      if (pubSelectionMethod === 'manual') {
+        pubSelectionScreen.classList.remove('visible');
+      } else {
+        londonPubsFinderScreen.classList.remove('visible');
+      }
+      
+      // Clear previous options
+      hidingPubOptionsContainer.innerHTML = '';
+      
+      // Add pub options
+      pubs.forEach((pub, index) => {
+        const button = document.createElement('button');
+        button.className = 'pub-option-button';
+        button.textContent = `${index + 1}. ${pub}`;
+        button.dataset.pub = pub;
+        button.addEventListener('click', () => {
+          // Highlight selected button
+          document.querySelectorAll('.pub-option-button').forEach(btn => {
+            btn.style.background = '#FFF';
+          });
+          button.style.background = '#FFD700';
+        });
+        hidingPubOptionsContainer.appendChild(button);
+      });
+      
+      // Show hiding pub selection screen
+      hidingPubSelectionScreen.classList.add('visible');
+    }
+
+    // Handle hiding pub submission
+    submitHidingPubButton.addEventListener('click', () => {
+      const selectedButton = document.querySelector('.pub-option-button[style*="background: rgb(255, 215, 0)"]');
+      
+      if (!selectedButton) {
+        alert("Please select a pub to hide at!");
+        return;
+      }
+      
+      const hidingPub = selectedButton.dataset.pub;
+      
+      socket.emit('submitPubs', {
+        code: currentLobbyCode,
+        pubs: selectedPubs,
+        pubCount: selectedPubCount,
+        hidingPub: hidingPub
+      });
+    });
+
+    // Add more pubs button
+    addAnotherPubBtn.addEventListener('click', addPubInput);
+
+    // Leave lobby
+    leaveLobbyButton.addEventListener('click', () => {
+      socket.emit('leaveLobby', currentLobbyCode);
+      lobbyScreen.classList.remove('visible');
+      gameOptions.classList.add('visible');
+      currentLobbyCode = null;
+    });
+
+    // Return to lobby from game screen
+    returnToLobbyButton.addEventListener('click', () => {
+      gameScreen.classList.remove('visible');
+      lobbyScreen.classList.add('visible');
+    });
+
+    // Pub selection method buttons
+    manualPubSelectionBtn.addEventListener('click', () => {
+      pubSelectionMethod = 'manual';
+      manualPubSelectionBtn.classList.add('active');
+      autoPubSelectionBtn.classList.remove('active');
+    });
+
+    autoPubSelectionBtn.addEventListener('click', () => {
+      pubSelectionMethod = 'auto';
+      autoPubSelectionBtn.classList.add('active');
+      manualPubSelectionBtn.classList.remove('active');
+    });
+
+    // Back from pub selection method screen
+    backFromSelectionMethodButton.addEventListener('click', () => {
+      pubSelectionMethodScreen.classList.remove('visible');
+      lobbyScreen.classList.add('visible');
+    });
+
+    // Back to selection method from manual pub selection
+    backToSelectionMethodButton1.addEventListener('click', () => {
+      pubSelectionScreen.classList.remove('visible');
+      pubSelectionMethodScreen.classList.add('visible');
+    });
+
+    // Back to selection method from auto pub selection
+    backToSelectionMethodButton2.addEventListener('click', () => {
+      londonPubsFinderScreen.classList.remove('visible');
+      pubSelectionMethodScreen.classList.add('visible');
+    });
+
+    // Close pub finder
+    closeFinderBtn.addEventListener('click', () => {
+      londonPubsFinderScreen.classList.remove('visible');
+      pubSelectionMethodScreen.classList.add('visible');
+    });
+
+    // ===== London Pubs Finder Functionality =====
+
+// DOM Elements
+const selectedArea = document.getElementById('selectedArea');
+const areaSelection = document.getElementById('areaSelection');
+
+// Event listeners for search type toggle
+document.querySelectorAll('input[name="searchType"]').forEach(radio => {
+  radio.addEventListener('change', function() {
+    areaSelection.style.display = this.value === 'specific' ? 'block' : 'none';
+  });
+});
+
+// Find pubs button handler
+findPubsBtn.addEventListener('click', async () => {
+  const pubCount = parseInt(finderPubCount.value);
+  const searchType = document.querySelector('input[name="searchType"]:checked').value;
+  
+  if (isNaN(pubCount) || pubCount < 3 || pubCount > 15) {
+    showFinderError('Please enter a valid number between 3-15');
+    return;
+  }
+  
+  finderResults.innerHTML = '<div class="loading">Searching for pubs... (this may take a moment)</div>';
+  
+  try {
+    let pubs = [];
+    
+    if (searchType === 'all') {
+      // Search across all London
+      const response = await fetch('/api/london-areas');
+      const { areas } = await response.json();
+      
+      // Calculate how many pubs to get from each area
+      const areaCount = Object.keys(areas).length;
+      const pubsPerArea = Math.max(2, Math.ceil(pubCount / areaCount)); // Ensure at least 2 per area
+      
+      // Search each area
+      const areaSearches = Object.values(areas).map(area => 
+        searchPubs(area.lat, area.lng, area.radius, pubsPerArea)
+      );
+      
+      const areaResults = await Promise.all(areaSearches);
+      pubs = areaResults.flat();
+      
+      // Shuffle and limit to requested count
+      pubs = shuffleArray(pubs).slice(0, pubCount);
+    } else {
+      // Search specific area
+      const areaId = selectedArea.value;
+      const response = await fetch('/api/london-areas');
+      const { areas } = await response.json();
+      const area = areas[areaId];
+      
+      pubs = await searchPubs(area.lat, area.lng, area.radius, pubCount);
+    }
+    
+    if (pubs.length === 0) {
+      throw new Error('No pubs found. Please try another area.');
+    }
+    
+    displayFinderResults(pubs);
+  } catch (error) {
+    showFinderError(error.message);
+    console.error('Search failed:', error);
+  }
+});
+
+// Search pubs using API
+async function searchPubs(lat, lng, radius, count) {
+  const response = await fetch(`/api/find-pubs?lat=${lat}&lng=${lng}&radius=${radius}&count=${count}`);
+  const data = await response.json();
+  
+  if (data.error) {
+    throw new Error(data.error);
+  }
+  
+  return data.pubs || [];
+}
+
+// Display results in finder
+function displayFinderResults(pubs) {
+  finderResults.innerHTML = '';
+  
+  if (!pubs || pubs.length === 0) {
+    showFinderError('No pubs found. Please try again.');
+    return;
+  }
+  
+  pubs.forEach(pub => {
+    const pubElement = document.createElement('div');
+    pubElement.className = 'pub';
+    pubElement.innerHTML = `
+      <div class="pub-name">${pub.name}</div>
+      <div class="pub-address">${pub.address}</div>
+      ${pub.rating ? `<div class="pub-rating">⭐ ${pub.rating}/5</div>` : ''}
+      <button class="select-pub-btn" data-pub="${encodeURIComponent(pub.name)}">
+        Select This Pub
+      </button>
+    `;
+    finderResults.appendChild(pubElement);
+  });
+  
+  // Add event listeners to all select buttons
+  document.querySelectorAll('.select-pub-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const pubName = decodeURIComponent(btn.dataset.pub);
+      
+      // Visual feedback
+      btn.textContent = '✓ Selected!';
+      btn.style.backgroundColor = '#2ecc71';
+      
+      // Store selected pubs
+      const selectedPubs = Array.from(document.querySelectorAll('.pub-name'))
+        .map(el => el.textContent);
+      const selectedPubCount = selectedPubs.length;
+      
+      // Submit the pubs
+      socket.emit('submitPubs', {
+        code: currentLobbyCode,
+        pubs: selectedPubs,
+        pubCount: selectedPubCount,
+        pubSelectionMethod: 'auto'
+      });
+    });
+  });
+}
+
+// Show error in finder
+function showFinderError(message) {
+  finderResults.innerHTML = `<div class="error">${message}</div>`;
+}
+
+// Helper function to shuffle array
+function shuffleArray(array) {
+  const newArray = [...array];
+  for (let i = newArray.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+  }
+  return newArray;
+}
+
+// Handle Enter key in inputs
+finderPubCount.addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') findPubsBtn.click();
+});
+
+// Close button for pub finder
+document.getElementById('closeFinderBtn').addEventListener('click', () => {
+  document.getElementById('londonPubsFinderScreen').classList.remove('visible');
+  document.getElementById('pubSelectionMethodScreen').classList.add('visible');
+});
+// Helper function to shuffle array
+function shuffleArray(array) {
+  const newArray = [...array];
+  for (let i = newArray.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+  }
+  return newArray;
+}
+
+// Update the searchPubs function to properly use the count parameter
+async function searchPubs(lat, lng, radius, count) {
+  const response = await fetch(`/api/find-pubs?lat=${lat}&lng=${lng}&radius=${radius}&count=${count}`);
+  const data = await response.json();
+  
+  if (data.error) {
+    throw new Error(data.error);
+  }
+  
+  return data.pubs || [];
+}
+
+    // Display results in finder
+    function displayFinderResults(pubs) {
+      finderResults.innerHTML = '';
+      
+      if (!pubs || pubs.length === 0) {
+        showFinderError('No pubs found. Please try again.');
+        return;
+      }
+      
+      pubs.forEach(pub => {
+        const pubElement = document.createElement('div');
+        pubElement.className = 'pub';
+        pubElement.innerHTML = `
+          <div class="pub-name">${pub.name}</div>
+          <div class="pub-address">${pub.address}</div>
+          ${pub.rating ? `<div class="pub-rating">⭐ ${pub.rating}/5</div>` : ''}
+          <button class="select-pub-btn" data-pub="${encodeURIComponent(pub.name)}">
+            Select This Pub
+          </button>
+        `;
+        finderResults.appendChild(pubElement);
+      });
+      
+      // Add event listeners to all select buttons
+      document.querySelectorAll('.select-pub-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const pubName = decodeURIComponent(btn.dataset.pub);
+          
+          // Visual feedback
+          btn.textContent = '✓ Selected!';
+          btn.style.backgroundColor = '#2ecc71';
+          
+          // Store selected pubs
+          selectedPubs = pubs.map(p => p.name);
+          selectedPubCount = pubs.length;
+          
+          // Show hiding pub selection after a brief delay
+          setTimeout(() => {
+            showHidingPubSelection(selectedPubs);
+          }, 1000);
+        });
+      });
+    }
+
+    // Show error in finder
+    function showFinderError(message) {
+      finderResults.innerHTML = `<div class="error">${message}</div>`;
+    }
+
+    // Event listeners for search type toggle in finder
+    document.querySelectorAll('input[name="searchType"]').forEach(radio => {
+      radio.addEventListener('change', function() {
+        document.getElementById('areaSelection').style.display = this.value === 'specific' ? 'block' : 'none';
+      });
+    });
+
+    // Socket event handlers
+    socket.on('lobbyCreated', (data) => {
+      currentLobbyCode = data.code;
+      document.getElementById('lobbyCodeDisplay').textContent = `CODE: ${data.code}`;
+      document.getElementById('playerCount').textContent = "Players: 1";
+      document.getElementById('playersList').innerHTML = `${playerName} (Host)`;
+      lobbyScreen.classList.add('is-host');
+      showLobbyScreen();
+    });
+
+    socket.on('lobbyJoined', (data) => {
+      currentLobbyCode = data.code;
+      document.getElementById('lobbyCodeDisplay').textContent = `CODE: ${data.code}`;
+      showLobbyScreen();
+    });
+
+    socket.on('invalidLobby', () => {
+      alert("Invalid game code! Please try another.");
+    });
+
+    socket.on('playerUpdate', (players) => {
+      updatePlayerList(players);
+    });
+
+    socket.on('requestPubs', (data) => {
+      // Hide all other screens
+      document.querySelectorAll('.sub-menu').forEach(menu => {
+        menu.classList.remove('visible');
+      });
+      
+      // Show pub selection method screen
+      pubSelectionMethodScreen.classList.add('visible');
+      
+      // Reset pub selection method to manual
+      pubSelectionMethod = 'manual';
+      manualPubSelectionBtn.classList.add('active');
+      autoPubSelectionBtn.classList.remove('active');
+      
+      // Clear previous inputs
+      pubInputsContainer.innerHTML = '';
+      for (let i = 0; i < 3; i++) addPubInput();
+    });
+    
+      // Handle manual pub selection button click
+      manualPubSelectionBtn.addEventListener('click', () => {
+        pubSelectionMethod = 'manual';
+        manualPubSelectionBtn.classList.add('active');
+        autoPubSelectionBtn.classList.remove('active');
+        pubSelectionMethodScreen.classList.remove('visible');
+        pubSelectionScreen.classList.add('visible');
+      });
+
+     // Handle auto pub selection button click
+      autoPubSelectionBtn.addEventListener('click', () => {
+        pubSelectionMethod = 'auto';
+        autoPubSelectionBtn.classList.add('active');
+        manualPubSelectionBtn.classList.remove('active');
+        pubSelectionMethodScreen.classList.remove('visible');
+        londonPubsFinderScreen.classList.add('visible');
+      });
+    socket.on('gameStatusUpdate', (data) => {
+      if (data.status === 'awaiting_pubs') {
+        hiderAnnouncement.innerHTML = `<h2>${data.message}</h2>`;
+        playerRoles.innerHTML = '';
+        gameScreen.classList.add('visible');
+      }
+    });
+
+    socket.on('gameStarting', (data) => {
+      // Validate data
+      if (!data || !data.hiderId || !data.pubs) {
+        console.error('Invalid game data:', data);
+        return;
+      }
+
+      // Hide all other screens
+      document.querySelectorAll('.sub-menu').forEach(menu => {
+        menu.classList.remove('visible');
+      });
+      
+      // Show game screen
+      gameScreen.classList.add('visible');
+      
+      // Display who is hider
+      const isHider = socket.id === data.hiderId;
+      hiderAnnouncement.innerHTML = isHider 
+        ? '<h2>YOU ARE THE HIDER!</h2>' 
+        : `<h2>${data.hiderName} IS THE HIDER!</h2>`;
+      
+      // Show selected pubs
+      let pubsHTML = '<h3>Selected Pubs:</h3><ol>';
+      data.pubs.forEach((pub, index) => {
+        pubsHTML += `<li>${pub} ${index < data.pubCount ? '✅' : ''}</li>`;
+      });
+      pubsHTML += '</ol>';
+      
+      // Show player roles
+      let rolesHTML = '<h3>Players:</h3>';
+      data.allPlayers.forEach(player => {
+        const isYou = socket.id === player.id;
+        const isThisPlayerHider = player.id === data.hiderId;
+        
+        rolesHTML += `
+          <div class="${isYou ? (isThisPlayerHider ? 'you-are-hider' : 'you-are-seeker') : ''}">
+            ${player.name} ${isThisPlayerHider ? '👑 (Hider)' : '(Seeker)'} ${isYou ? ' (YOU)' : ''}
+          </div>
+        `;
+      });
+      // Add selection method info
+    rolesHTML += `<p>Pubs selected via: ${data.pubSelectionMethod === 'auto' ? 'London Pubs Finder' : 'Manual Entry'}</p>`;
+      playerRoles.innerHTML = pubsHTML + rolesHTML;
+    });
+
+    socket.on('youAreNowHost', () => {
+      isHost = true;
+      lobbyScreen.classList.add('is-host');
+      alert("You are now the host of this lobby!");
+    });
+
+    socket.on('pubError', (message) => {
+      alert(message);
+    });
+
+    // Helper functions
+    function showLobbyScreen() {
+      document.querySelectorAll('.sub-menu').forEach(menu => {
+        menu.classList.remove('visible');
+      });
+      lobbyScreen.classList.add('visible');
+    }
+
+    function updatePlayerList(players) {
+      document.getElementById('playerCount').textContent = `Players: ${players.length}`;
+      const playersList = document.getElementById('playersList');
+      playersList.innerHTML = players.map((player, index) => 
+        `${index === 0 ? '👑 ' : ''}${player.name}${index === 0 ? ' (Host)' : ''}`
+      ).join('<br>');
+    }
+
+    // Handle Enter key in input fields
+    playerNameInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') submitNameButton.click();
+    });
+
+    gameCodeInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') submitCodeButton.click();
+    });
+
+    finderPubCount.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') findPubsBtn.click();
+    });
+
+    // Error handling
+    socket.on('connect_error', (err) => {
+      console.error('Connection error:', err);
+      alert("Connection error! Please refresh the page.");
+    });
+
+    socket.on('error', (err) => {
+      console.error('Socket error:', err);
+    });
+  </script>
+</body>
+</html>
